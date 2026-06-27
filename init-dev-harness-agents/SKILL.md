@@ -163,6 +163,8 @@ frontmatter（name + description + emoji + color + capabilities）
 | devops | 大将军后勤辎重 | 演进式部署 + 监控 | Development Team |
 | retro-optimizer | 大将军军师史官 | Sprint 回顾 + strangler fig + 飞轮 | Development Team（回顾牵头） |
 
+**reviewer 审查覆盖率硬约束**：每次审查至少覆盖 4/5 维度（DoD / 测试 / 安全 / 性能 / 架构一致），低于 4 维度必须在评审报告中标注缺失原因。
+
 **角色输入输出契约**（architect/orchestrator 自决定义，不问用户）：
 
 | 角色 | 输入 | 输出 |
@@ -291,6 +293,8 @@ Harness 必须随执行持续演进。采用**双节奏机制**：
 **迭代触发**：
 - 小步快跑级：节点-skill 映射微调、FAQ 条目追加、best-practices 条目追加
 - 大周期级：角色定义迭代（FAQ 同类错误 ≥3 次）、工作流迭代（新工作类型）、模式固化（被引用 ≥3 次无调整）、最佳实践升华
+- **FAQ↔best-practices 双向关联**：同类 FAQ 出现 ≥3 次自动触发 best-practice 条目生成（"如何避免此错误"）；best-practice 反向关联 FAQ（"不这样做会出什么错"）
+- **效果度量**：大周期沉淀时量化四维指标（开发周期、代码质量、返工率、知识沉淀量），对比接入前后变化，识别改进方向
 
 **已初始化时的合并增强**：检测到已有配置不覆盖，按策略合并（harness.yaml diff 合并 / roles 追加能力 / workflows 追加或更新 / faq 追加条目 / best-practices 追加条目 / sync 追加条目 / evolution 追加历史）。**合并前必须向用户展示 diff**。
 
@@ -398,6 +402,7 @@ DevOps: devops (setup-pre-commit / git-guardrails-claude-code)
 
 - **Harness 与 Skills 分工**：本 skill 只定义角色 + 工作流（工作节点序列），不复制 skill 的具体步骤；角色执行节点时优先调用对应 skill，避免重复发明
 - **角色动态创建**：当 orchestrator triage 后发现无匹配角色的新工作类型时，按 `patterns/dual-phase-engineering/agents/roles/_template.md` 创建新角色文件，初始化武器库骨架，并在工作流中新增对应节点
+- **新角色接入规范**：动态创建新角色时必须产出 3 个文件——角色定义 `agents/roles/{role}.md` + FAQ `agents/faq/{role}.faq.md` + best-practices `agents/best-practices/{role}.best-practices.md`，并在 harness.yaml 中注册；新角色自动继承协同基础设施（progress / sync-log / handoff）
 - **知识库自形成（retro-optimizer 飞轮）**：角色文件的"方法论武器库"段落即知识库载体；初始为种子条目，每个 Sprint 回顾后由 retro-optimizer 执行"角色能力同步检查清单"动态积累（借鉴 `patterns/loop-enginerring` 飞轮机制）
 - **自我迭代是硬性要求**：Harness 必须随执行演进，不能一次性生成后不再维护
 - **双节奏迭代**：小步快跑（每次交互轻量迭代，最小改动）+ 大周期沉淀（每 N 轮深度回顾，重量级改动）；避免小步快跑做重量级改动，也避免大周期遗漏细节
