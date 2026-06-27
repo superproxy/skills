@@ -26,14 +26,14 @@ skills/
 |---|---|---|---|
 | `init-dev-agents` | `/init` | 为项目生成 `AGENTS.md`，定义开发流程、声明 skill 依赖、建立需求收集机制 | — |
 | `init-harness-agents` | `/init` | 通用多 Agent 协作框架（Harness），适用于产品、设计、研究等非代码领域 | coordinator / analyst / creator / evaluator |
-| `init-dev-harness-agents` | `/init-dev` | 代码开发多 Agent 协作框架，含架构师先行、triage-route 路由、双节奏自我迭代 | architect / orchestrator / executor / reviewer / devops |
+| `init-dev-harness-agents` | `/init-dev` | 代码开发多 Agent 协作框架，含架构师先行、triage-route 路由、双节奏自我迭代、各司其职+专属技能、retro-optimizer 飞轮、devops 自审视 | architect / orchestrator / executor / reviewer / devops / retro-optimizer |
 | `init-loop-agents` | `/loop` | 通用多角色工作流执行引擎，解析 `debate-workflow.yaml` 后按拓扑顺序执行 | 角色由项目自定义 |
 
 **三种初始化模式区别**：
 
 - `init-dev-agents`：只生成 `AGENTS.md` + 需求流程，不涉及多 Agent 集群
 - `init-harness-agents`：生成 `harness.yaml + roles/ + workflows/` 通用角色集群
-- `init-dev-harness-agents`：在通用 Harness 基础上加入代码开发专用角色、triage-route 路由、双节奏自我迭代（小步快跑 + 大周期沉淀）、FAQ + 最佳实践双向沉淀
+- `init-dev-harness-agents`：在通用 Harness 基础上加入代码开发专用角色（6 角色，含 retro-optimizer 飞轮）、triage-route 路由、双节奏自我迭代（小步快跑 + 大周期沉淀）、各司其职+专属技能、大框架到小要求层次传递（main_flow/tech_stack）、devops 启动脚本自审视、FAQ + 最佳实践双向沉淀
 - `init-loop-agents`：不绑定领域，只做通用工作流引擎，角色与流程由项目自定义
 
 ### 二、设计 / 前端类（1 个）
@@ -93,14 +93,37 @@ skills/
 
 工作流支持 `depends_on`（依赖）、`condition`（条件分支）、`loop`（循环 + 退出条件）、`output`（变量传递），输出保存到 `debates/{工作流名}-{日期}/`。
 
+### dual-phase-engineering
+
+`patterns/dual-phase-engineering/` 提供一个完整的"前期瀑布 + 后期 Scrum + Martin Fowler 渐进式 + TDD + 小步快跑"双阶段融合开发工作流示例：
+
+- **工作流**：`agents/dual-phase-workflow.yaml`（瀑布 5 步 → 范围冻结门 → Scrum 4 步循环 → 大周期沉淀）
+- **规则**：`agents/RULES.md`（11 节，含角色动态创建、知识库自形成飞轮、阶段切换守门、依赖 skill 声明等）
+- **角色**：`agents/roles/`（含 `_template.md` 动态创建模板）
+
+| 角色 | 隐喻 | 职责 |
+|---|---|---|
+| Architect | 总经理（谨慎经营） | 瀑布阶段：范围冻结、风险评估、DoD 把关、演进点清单 |
+| Orchestrator | 大将军参谋部 | 阶段切换守门、Scrum 编排、backlog 管理、动态创建角色 |
+| Executor | 大将军先锋营 | TDD 红绿重构、YAGNI 约束、小步快跑实施 |
+| Reviewer | 大将军监军 | DoD 验收、TDD 测试覆盖检查、多维度审查 |
+| DevOps | 大将军后勤辎重 | 演进式部署（灰度/feature flag）、可回滚硬约束 |
+| Retro-Optimizer | 大将军军师史官 | Sprint 回顾、strangler fig 评估、角色武器库同步（飞轮核心） |
+
+工作流用 `condition`（`freeze_gate` 含 `GATE_OPEN`）表达瀑布→Scrum 阶段切换，用 `loop`（`back_to: sprint_plan`，退出条件 `backlog_completed`）表达 Scrum 迭代循环，输出保存到 `iterations/{工作流名}-{日期}/`。核心特色是**角色动态创建 + 知识库自形成**：角色文件武器库初始为种子条目，通过 retro-optimizer 飞轮在每个 Sprint 回顾后动态积累。
+
 ## 核心设计理念
 
 1. **Harness 是骨架，Skills 是肌肉**：Harness 只定义角色 + 工作流节点序列，节点上的具体执行步骤由对应 skill 提供；角色不重复发明已有步骤
-2. **triage-route 路由**：orchestrator 先识别工作类型，再路由到匹配角色；无匹配则创建新角色/工作流
-3. **双节奏自我迭代**：小步快跑（每次交互轻量迭代，最小改动）+ 大周期沉淀（每 N 轮深度回顾，提炼模式、升级角色定义）
-4. **双向沉淀**：FAQ（负向错误沉淀）+ best-practices（正向经验沉淀）并行维护
-5. **已初始化不覆盖，合并增强**：检测到已有配置时按合并策略增强，保留已有能力与历史沉淀，合并前展示 diff
-6. **交互记录强制归档**：用户询问与变更记录存放于 `docs/interaction-changes/`，并在 AGENTS.md 中说明位置
+2. **各司其职 + 专属技能**：每个角色有分内工作（必做）与分外工作（交回其他角色），不越权；每个角色有专属技能清单，优先调用 skill
+3. **大框架到小要求**：双阶段工作流通过 `main_flow`（主要业务流程，大框架）与 `tech_stack`（主要技术栈，小要求）inputs 实现层次传递
+4. **triage-route 路由**：orchestrator 先识别工作类型，再路由到匹配角色；无匹配则创建新角色/工作流
+5. **双节奏自我迭代**：小步快跑（每次交互轻量迭代，最小改动）+ 大周期沉淀（每 N 轮深度回顾，提炼模式、升级角色定义）
+6. **retro-optimizer 飞轮**：每个 Sprint 回顾后执行角色能力同步检查，动态积累各角色武器库（知识库自形成）
+7. **devops 自审视**：每个 Sprint 末主动评估是否需要启停脚本，不等 orchestrator 指令
+8. **双向沉淀**：FAQ（负向错误沉淀）+ best-practices（正向经验沉淀）并行维护
+9. **已初始化不覆盖，合并增强**：检测到已有配置时按合并策略增强，保留已有能力与历史沉淀，合并前展示 diff
+10. **交互记录强制归档**：用户询问与变更记录存放于 `docs/interaction-changes/`，并在 AGENTS.md 中说明位置
 
 ## 依赖外部 Skill 链
 

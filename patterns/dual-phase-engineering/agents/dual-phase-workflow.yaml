@@ -1,0 +1,507 @@
+name: "双阶段融合开发：瀑布设计 → Scrum 实施"
+description: "前期瀑布（总经理谨慎经营）→ 范围冻结门 → 后期 Scrum（大将军指挥千军万马）+ TDD 红绿重构 + Martin Fowler 渐进式架构 → Sprint 回顾同步角色武器库"
+
+agents_dir: "agents/roles"
+
+# 输出路径
+output:
+  process_dir: "iterations/process"      # Sprint 执行过程记录
+  result_dir: "iterations/releases"      # 发布产物
+  case_dir: "skills/dual-phase/cases"    # 案例沉淀
+  skill_file: "skills/dual-phase/SKILL.md"  # 方法论主干（可选）
+  reference_dir: "skills/dual-phase/references"  # 专题长参考（可选）
+  inquiry_log: "docs/iteration-log.md"   # 迭代记录
+
+llm:
+  provider: deepseek
+  model: deepseek-chat
+
+concurrency: 1
+
+inputs:
+  - name: requirement
+    description: "需求文档或 PRD（必填）"
+    required: true
+  - name: main_flow
+    description: "主要业务流程类型（如 CRUD 业务系统 / API 平台 / 数据管道 / 重构遗留系统 / 全栈 Web 应用，必填）——大框架，决定角色任务适配方向"
+    required: true
+  - name: tech_stack
+    description: "主要技术栈（如 Java Spring Boot + Vue3 + PostgreSQL + Docker，必填）——小要求，决定角色技能调用与实施细节"
+    required: true
+  - name: sprint_count
+    description: "预计 sprint 数（可选，默认 6）"
+    required: false
+    default: "6"
+
+steps:
+  # ════════════════════════════════════════════════════════
+  # 瀑布阶段（Stage 1）— 总经理视角：谨慎经营
+  # architect 主导，orchestrator 协助拆解
+  # ════════════════════════════════════════════════════════
+
+  # ── 步骤 1：范围识别 ──
+  - id: wf_scope
+    role: "architect"
+    name: "架构师"
+    emoji: "🏛️"
+    task: |
+      基于 Martin Fowler 渐进式架构原则，识别需求范围：
+
+      ## 需求文档
+      {{requirement}}
+
+      ## 主要业务流程（大框架）
+      {{main_flow}}
+
+      ## 主要技术栈（小要求）
+      {{tech_stack}}
+
+      ## 你的任务
+      1. 抽取 P0（必须）/ P1（重要）/ P2（可选）功能清单
+      2. 识别非功能要求（性能/安全/可扩展性）—— 基于 {{tech_stack}} 适配
+      3. 识别外部依赖与硬约束
+      4. 标注"演进点"——当前决策有明确触发条件会改的地方（非"未来可能改"）
+      5. 根据 {{main_flow}} 适配架构骨架方向（如 CRUD → 模块分层；API 平台 → 网关+服务；数据管道 → ETL 分层；重构遗留 → strangler fig 路线图）
+
+      ## 输出要求
+      ### 范围基线
+      - P0 功能清单
+      - P1 功能清单
+      - P2 功能清单
+      - 非功能要求
+      - 外部依赖与硬约束
+
+      ### 演进点清单（架构骨架必备产出）
+      | 演进点 | 当前决策 | 触发重新决策的条件 | 可逆性 |
+      |---|---|---|---|
+
+      要求：演进点不是"未来可能改的地方"，而是"当前决策有明确触发条件会改的地方"。宁缺毋滥。
+    output: scope_result
+
+  # ── 步骤 2：里程碑建立 ──
+  - id: wf_milestone
+    role: "architect"
+    name: "架构师"
+    emoji: "🏛️"
+    task: |
+      建立里程碑与架构骨架（非最终架构）：
+
+      ## 范围基线与演进点
+      {{scope_result}}
+
+      ## 你的任务
+      1. 建立里程碑：方案 → 开发 → 联调 → 验收 → 发布
+      2. 标注 Stage 1（瀑布）/ Stage 2（Scrum）切换点
+      3. 建立架构骨架：只定义模块边界与扩展点，不实现细节
+      4. 对每个架构决策应用"最后责任时刻"原则：
+         - 此决策现在做是否会被后续信息推翻？（是→推迟）
+         - 推迟的代价是什么？（代价>推迟收益→立即做）
+         - 可逆性如何？（可逆→推迟；不可逆→立即做并记录理由）
+
+      ## 输出要求
+      ### 里程碑表
+      | 里程碑 | 阶段 | 目标 | 预估 | 退出条件 |
+
+      ### 架构骨架
+      - 模块边界与职责
+      - 扩展点清单（对应演进点）
+      - 测试架构（TDD 友好的分层）
+
+      ### 架构决策记录
+      每个决策标注 [立即做/推迟/可逆/不可逆] + 理由
+    output: milestone_result
+    depends_on: [wf_scope]
+
+  # ── 步骤 3：任务拆解（WBS）──
+  - id: wf_wbs
+    role: "orchestrator"
+    name: "编排者"
+    emoji: "🎖️"
+    task: |
+      将里程碑拆解为可执行 WBS：
+
+      ## 里程碑与架构骨架
+      {{milestone_result}}
+
+      ## 你的任务
+      1. 按 WBS 拆解：单任务 0.5~3 人天
+      2. 标注任务依赖关系（关键路径）
+      3. 为每个 P0 任务定义 DoD（可验证的完成标准）
+      4. 标注任务的方法论偏向：[瀑布设计/Scrum 实施]
+      5. 优先调用 writing-plans skill 完成拆解（如已安装）
+
+      ## 输出要求
+      ### WBS 表
+      | ID | 模块 | 任务 | 角色 | 依赖 | 优先级 | 工作量 | 阶段 | DoD |
+
+      ### 关键路径
+      列出关键路径上的任务序列
+
+      要求：DoD 必须可验证；单任务工作量必须在 0.5~3 人天。
+    output: wbs_result
+    depends_on: [wf_milestone]
+
+  # ── 步骤 4：风险评估 ──
+  - id: wf_risk
+    role: "architect"
+    name: "架构师"
+    emoji: "🏛️"
+    task: |
+      谨慎经营——识别风险并制定应对：
+
+      ## WBS
+      {{wbs_result}}
+
+      ## 你的任务
+      1. 风险评估：技术风险 / 进度风险 / 外部依赖风险
+      2. 每个风险标注：影响 / 概率 / 应对策略 / 责任角色
+      3. 识别硬约束（不可妥协的约束）
+      4. 标注哪些风险可能触发演进点重新决策
+
+      ## 输出要求
+      ### 风险矩阵
+      | 风险 | 影响 | 概率 | 应对 | 责任角色 | 触发演进点 |
+
+      ### 硬约束清单
+
+      要求：宁可高估风险，不可低估。总经理视角——谨慎经营。
+    output: risk_result
+    depends_on: [wf_wbs]
+
+  # ── 步骤 5：范围冻结门 ──
+  - id: wf_freeze
+    role: "architect"
+    name: "架构师"
+    emoji: "🏛️"
+    task: |
+      范围冻结门——瀑布阶段收尾，决定是否进入 Scrum 阶段：
+
+      ## 范围基线
+      {{scope_result}}
+
+      ## 里程碑与架构骨架
+      {{milestone_result}}
+
+      ## WBS
+      {{wbs_result}}
+
+      ## 风险矩阵
+      {{risk_result}}
+
+      ## 你的任务
+      检查三个冻结条件：
+      1. scope_frozen：P0 范围已冻结（不再增项）
+      2. risk_assessed：风险清单已产出（含影响/概率/应对/责任角色）
+      3. dod_defined：每个 P0 任务的 DoD 已可验证
+
+      ## 输出要求
+      输出 freeze_gate 变量，格式必须为以下之一：
+      - 放行：`GATE_OPEN`
+      - 阻塞：`GATE_BLOCKED:原因`
+
+      并附冻结检查表：
+      | 检查项 | 状态 | 备注 |
+      | scope_frozen | ✅/❌ | |
+      | risk_assessed | ✅/❌ | |
+      | dod_defined | ✅/❌ | |
+
+      要求：三项全 ✅ 才输出 GATE_OPEN；任一 ❌ 输出 GATE_BLOCKED:具体原因。
+    output: freeze_gate
+    depends_on: [wf_risk]
+
+  # ════════════════════════════════════════════════════════
+  # 阶段切换点（condition 守门）
+  # ════════════════════════════════════════════════════════
+
+  # ── 步骤 6：Sprint 计划（Scrum 阶段起点）──
+  - id: sprint_plan
+    role: "orchestrator"
+    name: "编排者"
+    emoji: "🎖️"
+    task: |
+      大将军指挥千军万马——Sprint 计划：
+
+      ## 范围基线
+      {{scope_result}}
+
+      ## WBS
+      {{wbs_result}}
+
+      ## 架构骨架与演进点
+      {{milestone_result}}
+
+      ## 你的任务
+      1. 从 WBS 选取本 Sprint backlog（按优先级 + 依赖）
+      2. 定义 Sprint goal（一句话目标）
+      3. architect 参与检查：本 Sprint 任务是否触及演进点？是否需要调整架构骨架？
+      4. 分配任务到 executor（可并行）
+
+      ## 输出要求
+      ### Sprint 计划
+      - Sprint 编号与 goal
+      - Sprint backlog（任务 ID + 负责角色 + DoD）
+      - 演进点检查结论
+      - 预估完成节点
+
+      要求：小步快跑——单 Sprint 不超过 2 周；backlog 不超载。
+    output: sprint_plan
+    depends_on: [wf_freeze]
+    condition: "{{freeze_gate}} contains GATE_OPEN"
+
+  # ════════════════════════════════════════════════════════
+  # Scrum 迭代（Stage 2）— 大将军视角：指挥千军万马
+  # TDD 内嵌于 sprint_implement
+  # ════════════════════════════════════════════════════════
+
+  # ── 步骤 7：TDD 实施 ──
+  - id: sprint_implement
+    role: "executor"
+    name: "执行者"
+    emoji: "⚔️"
+    task: |
+      先锋营小步快跑——TDD 实施本 Sprint backlog：
+
+      ## Sprint 计划
+      {{sprint_plan}}
+
+      ## 主要技术栈（小要求——决定测试框架与实现方式）
+      {{tech_stack}}
+
+      ## 主要业务流程（大框架——决定任务实施顺序）
+      {{main_flow}}
+
+      ## 你的任务
+      对 backlog 中每个任务，严格遵循 TDD 循环：
+      1. **红**：先写失败测试，描述预期行为（不写实现）—— 根据 {{tech_stack}} 选择测试框架
+      2. **绿**：写最小代码让测试通过（不过度设计）
+      3. **重构**：在测试保护下改进代码结构
+
+      每个任务至少完成一轮红绿重构。优先调用 test-driven-development skill（如已安装）。
+
+      ## YAGNI 约束（实施前自问）
+      - 此能力是否在当前 Sprint backlog 中？（否→不实现）
+      - 此抽象是否当前有 ≥2 个使用者？（否→不抽象）
+      - 此配置项是否当前会被读取？（否→不加）
+      - 例外：架构师在演进点清单中明确标注的扩展点可预留（须标注理由）
+
+      ## 输出要求
+      ### 实施报告
+      - 任务清单与状态
+      - 每个任务的红绿重构记录
+      - YAGNI 检查结果（通过/扩展点理由）
+      - 遗留问题
+
+      要求：小步快跑——每任务一轮红绿重构即提交；不在本 Sprint 内临时重构（重构进下 Sprint）。
+    output: implement_result
+    depends_on: [sprint_plan]
+
+  # ── 步骤 8：Sprint 评审 ──
+  - id: sprint_review
+    role: "reviewer"
+    name: "评审者"
+    emoji: "🔍"
+    task: |
+      监军质量把关——Sprint 评审：
+
+      ## 实施报告
+      {{implement_result}}
+
+      ## Sprint 计划（对照 DoD）
+      {{sprint_plan}}
+
+      ## 你的任务
+      1. DoD 达标检查：每个任务对照 DoD 验证
+      2. TDD 测试覆盖检查：红绿重构是否完整、测试是否有效
+      3. 安全维度检查（如适用）
+      4. 性能维度检查（如适用）
+      5. 架构一致性检查：是否偏离架构骨架与演进点决策
+      6. 优先调用 verification-before-completion skill（如已安装）
+
+      ## 输出要求
+      ### 评审报告
+      | 任务 | DoD 达标 | 测试覆盖 | 安全 | 性能 | 架构一致 | 结论 |
+
+      ### 阻塞问题清单
+      ### 改进建议
+
+      要求：未达 DoD 的任务必须列出阻塞原因；不放过质量死角。
+    output: review_result
+    depends_on: [sprint_implement]
+
+  # ── 步骤 9：持续交付 ──
+  - id: sprint_devops
+    role: "devops"
+    name: "DevOps"
+    emoji: "🚚"
+    task: |
+      后勤辎重——持续交付与监控：
+
+      ## 评审报告
+      {{review_result}}
+
+      ## 主要技术栈（小要求——决定部署形态与脚本语言）
+      {{tech_stack}}
+
+      ## 主要业务流程（大框架——决定监控关键路径）
+      {{main_flow}}
+
+      ## 你的任务
+      1. **发布控制闸门（前置 4 问）**——全通过才进发布流程：
+         - 主干与生产环境的差异是什么？
+         - 是否有真实发布需求（非调试性发布）？
+         - 回滚方案是否已准备？
+         - 监控告警是否已配置？
+         任一为否 → 提供替代路径，避免不必要发布
+      2. **密钥安全防护**——提交前执行密钥扫描，敏感信息强制走环境变量
+      3. 部署本 Sprint 产物（演进式部署：灰度/feature flag 优先）—— 根据 {{tech_stack}} 选 Docker/K8s/Serverless
+      4. 配置必要监控—— 根据 {{main_flow}} 选监控关键路径
+      5. 验证部署可回滚
+      6. 将部署状态回写到进度看板
+      7. 执行启动脚本自审视清单（见 devops 角色文件）—— 任一为是，主动产出脚本
+
+      ## 输出要求
+      ### 部署报告
+      - 部署形态（灰度/全量/feature flag）
+      - 监控项清单
+      - 回滚方案
+      - 部署状态
+
+      要求：演进式部署——不一次性全量；feature flag 优先；可回滚是硬约束。
+    output: devops_result
+    depends_on: [sprint_review]
+
+  # ── 步骤 10：Sprint 回顾（飞轮核心）──
+  - id: sprint_retro
+    role: "retro-optimizer"
+    name: "回顾优化者"
+    emoji: "📜"
+    task: |
+      军师史官——Sprint 回顾与角色武器库同步：
+
+      ## 本 Sprint 计划
+      {{sprint_plan}}
+
+      ## 实施报告
+      {{implement_result}}
+
+      ## 评审报告
+      {{review_result}}
+
+      ## 部署报告
+      {{devops_result}}
+
+      ## 你的任务
+
+      ### 任务一：Sprint 回顾
+      - what went well（做得好的）
+      - what went wrong（做得不好的）
+      - improvements（改进项）
+
+      ### 任务二：Strangler Fig 重构触发评估
+      检查：
+      1. 是否存在 Legacy 模块被新功能反复绕过？（是→候选 strangler）
+      2. 旧模块调用频率是否在下降？（是→加速 strangler）
+      3. 触发决策矩阵评估，决定是否启动 strangler 重构
+
+      ### 任务三：角色能力同步检查清单
+      按 RULES.md 第 8 节检查：
+      | 检查项 | 目标角色 | 是否需同步 | 同步内容 |
+      | 瀑布方法论增量 | architect | | |
+      | Scrum 编排增量 | orchestrator | | |
+      | 渐进式架构增量 | architect/retro-optimizer | | |
+      | TDD 实践增量 | executor/reviewer | | |
+      | 角色方法论修正 | 相关角色 | | |
+      | 新工作类型 | orchestrator | | |
+
+      如需同步，指明更新哪个角色文件的"方法论武器库 · 待积累"段落。
+
+      ### 任务四：判断 backlog 完成情况
+      - "backlog_completed" 或 "backlog_remaining"
+
+      ## 输出要求
+      ### Sprint 回顾报告
+      - 回顾三栏
+      - strangler fig 评估结论
+      - 角色能力同步报告
+      - backlog 状态判断
+
+      要求：每个 Sprint 回顾必须执行角色能力同步检查——这是知识库自形成的飞轮核心。
+    output: retro_result
+    depends_on: [sprint_devops]
+
+  # ── 步骤 11：Sprint 循环判断 ──
+  - id: sprint_loop
+    role: "orchestrator"
+    name: "编排者"
+    emoji: "🎖️"
+    task: |
+      检查 backlog 完成情况，决定是否进入下一 Sprint：
+
+      ## 回顾报告
+      {{retro_result}}
+
+      ## 你的任务
+      1. 读取 retro_result 中的 backlog 状态判断
+      2. 若 backlog_remaining：规划下一 Sprint（回到 sprint_plan）
+      3. 若 backlog_completed：进入大周期沉淀
+
+      ## 输出要求
+      输出 backlog_status 变量：
+      - 继续：`backlog_remaining`
+      - 完成：`backlog_completed`
+
+      并附下一 Sprint 建议或收尾说明。
+    output: backlog_status
+    depends_on: [sprint_retro]
+    loop:
+      back_to: sprint_plan
+      max_iterations: 6
+      exit_condition: "{{backlog_status}} contains backlog_completed"
+
+  # ════════════════════════════════════════════════════════
+  # 大周期沉淀（双节奏：小步快跑已完成，大周期沉淀收尾）
+  # ════════════════════════════════════════════════════════
+
+  # ── 步骤 12：大周期沉淀 ──
+  - id: big_cycle_sink
+    role: "retro-optimizer"
+    name: "回顾优化者"
+    emoji: "📜"
+    task: |
+      大周期沉淀——提炼模式、升级角色定义、strangler fig 重构决策：
+
+      ## 全程 Sprint 回顾汇总
+      {{retro_result}}
+
+      ## 你的任务
+
+      ### 任务一：模式提炼
+      汇总所有 Sprint 回顾中的方法论增量，识别系统性模式：
+      - 瀑布阶段反复出现的问题模式
+      - Scrum 阶段反复出现的协作模式
+      - TDD 实践中反复出现的红绿重构模式
+      - 渐进式架构中反复出现的演进点决策模式
+
+      ### 任务二：角色定义升级评估
+      检查每个角色武器库"待积累"段落：
+      - 同类经验是否已积累 ≥3 条？（是→升级为种子条目）
+      - FAQ 同类错误是否出现 ≥3 次？（是→升级到角色行为准则）
+
+      ### 任务三：Strangler Fig 重构总决策
+      汇总所有 Sprint 的 strangler fig 评估，做出总决策：
+      - 是否启动 strangler 重构？
+      - 重构路线图（facade → 迁移 → 删除）
+
+      ### 任务四：可复用模式固化
+      将稳定模式（被引用 ≥3 次无调整）提炼为可复用工作模式，写入 `iterations/patterns.md`。
+
+      ## 输出要求
+      ### 大周期沉淀报告
+      - 模式提炼清单
+      - 角色定义升级建议
+      - strangler fig 重构总决策
+      - 可复用模式清单
+
+      要求：从零散经验提炼系统性模式；FAQ 反复出现的错误升级到角色定义；稳定模式固化为标准工作流。
+    output: evolution_report
+    depends_on: [sprint_loop]
