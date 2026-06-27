@@ -104,7 +104,7 @@ description: >-
 
 ### Step 2: 生成 Harness 配置
 
-创建 `agents/harness.yaml`，定义 6 角色 + 6/7 工作流。完整模板见 `templates.md` 的「harness.yaml 模板」。
+创建 `agents/harness.yaml`，定义 6 角色 + 6/7 工作流。完整模板见 `references/templates.md` 的「harness.yaml 模板」。
 
 **角色清单**（capabilities 与 `patterns/dual-phase-engineering/agents/roles/*.md` 一致）：
 
@@ -142,7 +142,7 @@ frontmatter（name + description + emoji + color + capabilities）
 └── 行为准则（硬约束 + 各司其职 + 协作边界）
 ```
 
-6 角色完整定义见 `roles-reference.md`。以下为角色隐喻与 Scrum 映射：
+6 角色生成规范见 `references/roles.md`（权威来源为 `patterns/dual-phase-engineering/agents/roles/*.md`）。以下为角色隐喻与 Scrum 映射：
 
 | 角色 | 隐喻 | 方法论偏向 | Scrum 角色 |
 |---|---|---|---|
@@ -178,11 +178,11 @@ frontmatter（name + description + emoji + color + capabilities）
 
 ### Step 6: 生成 Harness AGENTS.md
 
-按 `templates.md` 的「AGENTS.md 模板」生成项目 Harness 入口文档，含项目定位、Agent 架构拓扑、协作流程、治理规则、FAQ/best-practices 入口、自我迭代、协同进度、交互记录、Skill 依赖表。
+按 `references/templates.md` 的「AGENTS.md 模板」生成项目 Harness 入口文档，含项目定位、Agent 架构拓扑、协作流程、治理规则、FAQ/best-practices 入口、自我迭代、协同进度、交互记录、Skill 依赖表。
 
 ### Step 7: 生成通信配置
 
-创建 `agents/communication.yaml`，模板见 `templates.md` 的「communication.yaml 模板」。JSON 格式 + 超时重试 + 消息 schema。
+创建 `agents/communication.yaml`，模板见 `references/templates.md` 的「communication.yaml 模板」。JSON 格式 + 超时重试 + 消息 schema。
 
 ### Step 8: 记录交互变更
 
@@ -192,7 +192,7 @@ frontmatter（name + description + emoji + color + capabilities）
 
 创建 `agents/evolution/` 目录。**双节奏机制**：小步快跑（每次交互轻量迭代）+ 大周期沉淀（每 N 轮深度回顾）。
 
-完整 `evolution.yaml` 模板见 `templates.md` 的「evolution.yaml 模板」，含：
+完整 `evolution.yaml` 模板见 `references/templates.md` 的「evolution.yaml 模板」，含：
 - `iteration.small_step`（per-interaction，最小改动，all-roles）
 - `iteration.big_cycle`（every-n-interactions，pattern-extraction，orchestrator-led）
 - `role_practice`（6 角色各自的 collect/analyze/sink/iterate）
@@ -206,7 +206,7 @@ frontmatter（name + description + emoji + color + capabilities）
 
 ### Step 10: 生成协同进度跟踪与经验总结文件
 
-创建 `agents/sync/` 目录。模板见 `templates.md` 的「sync 模板」：
+创建 `agents/sync/` 目录。模板见 `references/templates.md` 的「sync 模板」：
 - `progress.yaml` — 全局进度看板（active_workflows + agent_queues + blockers + milestones + stats）
 - `handoffs/handoff-template.yaml` — 交接记录模板
 - `sync-log.md` — 操作时间线日志
@@ -362,8 +362,8 @@ DevOps: devops (setup-pre-commit / git-guardrails-claude-code)
 
 | 文件 | 内容 | 读取时机 |
 |---|---|---|
-| `templates.md` | harness.yaml / AGENTS.md / communication.yaml / evolution.yaml / sync 模板 | 生成对应文件时 |
-| `roles-reference.md` | 6 角色完整定义（六段结构详解 + 武器库种子 + 启动脚本自审视清单 + 角色能力同步检查清单） | 生成角色文件时 |
+| `references/templates.md` | harness.yaml / AGENTS.md / communication.yaml / evolution.yaml / sync 模板 | 生成对应文件时 |
+| `references/roles.md` | 6 角色生成规范（六段结构 + capabilities 对齐 + 输入输出契约 + devops 自审视清单 + retro-optimizer 飞轮检查清单） | 生成角色文件时 |
 
 ## 核心原则
 
